@@ -1,4 +1,4 @@
-# distirbuted-task-scheduler
+# distributed-task-scheduler
 A distributed task scheduler application written in Go using its concurrency features. When complete, it will have a load manager, task queue, databases and more.
 
 ### TODOs
