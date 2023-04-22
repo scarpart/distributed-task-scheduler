@@ -20,3 +20,15 @@ OFFSET $2;
 -- name: DeleteUser :exec
 DELETE FROM "Users"
 WHERE user_id = $1;
+
+-- name: UpdateUserPassword :one
+UPDATE "Users"
+SET password = $2
+WHERE user_id = $1
+RETURNING *; 
+
+-- name: UpdateUserUsername :one
+UPDATE "Users"
+SET username = $2
+WHERE user_id = $1
+RETURNING *;
