@@ -1,6 +1,6 @@
 package enums
 
-type Status int
+type TaskStatus int
 
 const (
 	Running = iota
@@ -16,4 +16,12 @@ const (
 	Important
 	Normal
 	NotImportant
+)
+
+type NodeStatus int
+
+const (
+	OnFree = iota
+	OnBusy
+	Off
 )
