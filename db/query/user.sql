@@ -21,9 +21,9 @@ OFFSET $2;
 DELETE FROM "Users"
 WHERE user_id = $1;
 
--- name: UpdateUserPassword :one
+-- name: UpdateUser :one
 UPDATE "Users"
-SET password = $2
+SET password = $4, email = $3, username = $2
 WHERE user_id = $1
 RETURNING *; 
 
