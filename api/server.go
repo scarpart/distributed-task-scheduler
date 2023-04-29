@@ -23,6 +23,7 @@ func NewServer(store *db.Store) *Server {
 	// GET 
 	//router.GET("/task", server.GetTask)
 	router.GET("/node/:node_id", server.GetNode)
+	router.GET("/node", server.GetAllNodes)
 
 	server.router = router
 	return server
