@@ -7,17 +7,18 @@ import (
 	"testing"
 
 	_ "github.com/lib/pq"
-)
-
-const (
-	dbDriver = "postgres"
-	dbSource = "postgresql://taskmanager:distributed-tasks@localhost:5432/distributed_task_scheduler_db?sslmode=disable"
+	"github.com/scarpart/distributed-task-scheduler/util"
 )
 
 var testQueries *Queries
 
 func TestMain(m *testing.M) {
-	conn, err := sql.Open(dbDriver, dbSource)
+	config, err := util.LoadConfig("../..")
+	if err != nil {
+		log.Fatal("Could not read the config file:", err) 
+	}
+
+	conn, err := sql.Open(config.DB_DRIVER, config.DB_SOURCE)
 
 	if err != nil {
 		log.Fatal("cannot connect to the database:", err)
