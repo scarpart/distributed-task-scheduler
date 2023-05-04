@@ -3,7 +3,7 @@ package enums
 type NodeStatus int
 
 const (
-	OnFree = iota
+	OnFree NodeStatus = iota
 	OnBusy
 	Off
 )

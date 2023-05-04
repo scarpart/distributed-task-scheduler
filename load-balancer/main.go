@@ -1,4 +1,4 @@
-package main
+package loadbalancer
 
 import (
 	"database/sql"
