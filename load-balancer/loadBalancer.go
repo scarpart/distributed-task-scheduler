@@ -34,12 +34,20 @@ func NewLoadBalancer() LoadBalancer {
 	}
 }
 
-// TODO: keep adding things here for the constructor pattern 
-// TODO: fix enums (both individual enums and their declarations)
 func (lb LoadBalancer) WithIpAddr(ip string) LoadBalancer {
 	lb.IpAddr = ip
 	return lb
 }	
+
+func (lb LoadBalancer) WithPort(port string) LoadBalancer {
+	lb.Port = port
+	return lb
+}
+
+func (lb LoadBalancer) WithBaseUrl(url string) LoadBalancer {
+	lb.BaseUrl = url
+	return lb
+}
 
 func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 	client := &http.Client{}
@@ -70,6 +78,7 @@ func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 	ctx.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
 }
 
+// Probably going to be replaced by the heap monitor
 // The actual algorithm behind the load balancing
 //
 // Uses a Heap data structure to store the servers, updating their priorities
@@ -78,39 +87,6 @@ func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 func (lb *LoadBalancer) SelectServer() server.RemoteServer {
 	// TODO
 	return server.RemoteServer{}
-}
-
-func (lb *LoadBalancer) GetServerStatus(server *server.RemoteServer) {
-	cmd := exec.Command("top", "-b", "-n", "1")
-	output, err := cmd.Output()
-	if err != nil {
-		log.Fatal("Could not get the system statistics:", err)
-	}
-
-	scanner := bufio.NewScanner(strings.NewReader(string(output)))
-	for scanner.Scan() {
-		line := scanner.Text()	
-		
-		if strings.HasPrefix(line, "%Cpu(s): ") {
-			fmt.Println(line)
-			num := strings.Split(line, "ni, ")[1][:4]
-			idleCpu, _ := strconv.ParseFloat(num, 32)
-			server.CPU_Usage = float32(100) - float32(idleCpu)
-			fmt.Println(server.CPU_Usage)
-		} else if strings.HasPrefix(line, "MiB Mem :") {
-			fmt.Println(line)
-
-			split := strings.Split(line, ":  ")
-			used := split[1][:7] 
-			idle := split[1][16:23]
-			
-			idleMem, _ := strconv.ParseFloat(idle, 32)
-			usedMem, _ := strconv.ParseFloat(used, 32)
-
-			server.MEM_Usage = float32(usedMem) - float32(idleMem)
-			fmt.Println(server.MEM_Usage)
-		}
-	}
 }
 
 

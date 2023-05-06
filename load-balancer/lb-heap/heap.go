@@ -22,6 +22,11 @@ func (heap *Heap) EnsureExtraCapacity() {
 	heap.Array = append(heap.Array, make([]*server.RemoteServer, len(heap.Array))...)
 }
 
+func (heap *Heap) Root() (*server.RemoteServer, error) {
+	if (heap.Size <= 0) { return nil, errors.New("The heap is empty.") }
+	return heap.Array[0], nil
+}
+
 func (heap *Heap) Poll() (*server.RemoteServer, error) {
 	if (heap.Size <= 0) { return nil, errors.New("The heap is empty.") }
 	firstServer := heap.Array[0]
