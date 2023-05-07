@@ -7,27 +7,27 @@ import (
 )
 
 type Heap struct {
-	Array []*server.RemoteServer
+	Array []*server.ServerStats
 	Size  int
 }
 
 func NewHeap() Heap {
 	return Heap{
-		Array: make([]*server.RemoteServer, 5),
+		Array: make([]*server.ServerStats, 5),
 		Size: 0,
 	}
 }
 
 func (heap *Heap) EnsureExtraCapacity() {
-	heap.Array = append(heap.Array, make([]*server.RemoteServer, len(heap.Array))...)
+	heap.Array = append(heap.Array, make([]*server.ServerStats, len(heap.Array))...)
 }
 
-func (heap *Heap) Root() (*server.RemoteServer, error) {
+func (heap *Heap) Root() (*server.ServerStats, error) {
 	if (heap.Size <= 0) { return nil, errors.New("The heap is empty.") }
 	return heap.Array[0], nil
 }
 
-func (heap *Heap) Poll() (*server.RemoteServer, error) {
+func (heap *Heap) Poll() (*server.ServerStats, error) {
 	if (heap.Size <= 0) { return nil, errors.New("The heap is empty.") }
 	firstServer := heap.Array[0]
 	heap.Array[0] = heap.Array[heap.Size-1]
@@ -36,7 +36,7 @@ func (heap *Heap) Poll() (*server.RemoteServer, error) {
 	return firstServer, nil
 }
 
-func (heap *Heap) Add(server *server.RemoteServer) {
+func (heap *Heap) Add(server *server.ServerStats) {
 	heap.EnsureExtraCapacity()
 	heap.Array[heap.Size] = server
 	heap.Size++

@@ -1,4 +1,4 @@
-package requestdistribution 
+package requestdistribution
 
 import (
 	"fmt"
@@ -6,14 +6,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/scarpart/distributed-task-scheduler/enums"
+	"github.com/scarpart/distributed-task-scheduler/load-balancer/server"
 )
 
 type LoadBalancer struct {
 	IpAddr  string
 	Port    string
 	Servers Heap 
-	Status  enums.NodeStatus  
+	Status  int32 
 	BaseUrl string
 }
 
@@ -45,7 +45,8 @@ func (lb LoadBalancer) WithBaseUrl(url string) LoadBalancer {
 func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 	client := &http.Client{}
 
-	server := lb.SelectServer()
+	//server := lb.SelectServer()
+	server := server.RemoteServer{}
 	req, err := http.NewRequest(ctx.Request.Method, server.BaseUrl + ctx.Request.URL.Path, ctx.Request.Body)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
