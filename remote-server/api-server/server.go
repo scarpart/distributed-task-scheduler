@@ -32,9 +32,8 @@ func NewServer(store *db.Store, ipAddr net.IP) *Server {
 	//router.GET("/task", server.GetTask)
 	router.GET("/node/:node_id", server.GetNode)
 	router.GET("/node", server.GetAllNodes)
-	//router.GET("/stats", server.GetStats)
 
-	// PROMETHEUS METRICS 
+	// Prometheus metrics to be read from the main server (Load Balancer)
 	cpuUsage := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "cpu_usage",
@@ -51,15 +50,15 @@ func NewServer(store *db.Store, ipAddr net.IP) *Server {
 	)
 	prometheus.MustRegister(cpuUsage, memUsage)
 
-	// PROMETHEUS ROUTES
+	// GET - Prometheus 
 	router.GET("/metrics", func(ctx *gin.Context) {
 		cpu, mem, err := getUsageStats()
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
-		cpuUsage.With(prometheus.Labels{"endpoint": "someendpoint"}).Set(cpu)
-		memUsage.With(prometheus.Labels{"endpoint": "someendpoint"}).Set(mem)	
+		cpuUsage.With(prometheus.Labels{"endpoint": server.ipAddr.String()}).Set(cpu)
+		memUsage.With(prometheus.Labels{"endpoint": server.ipAddr.String()}).Set(mem)	
 		promhttp.Handler().ServeHTTP(ctx.Writer, ctx.Request)
 	})
 

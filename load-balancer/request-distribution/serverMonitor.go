@@ -13,14 +13,30 @@ import (
 )
 
 type ServerMonitor struct {
-	Heap    Heap
-	Servers []server.RemoteServer
+	Heap     Heap
+	Servers  []server.RemoteServer
+	CpuGauge *prometheus.GaugeVec
+	MemGauge *prometheus.GaugeVec
 }
 
 func NewServerMonitor() ServerMonitor {
 	return ServerMonitor{
 		Heap: NewHeap(),
 		Servers: []server.RemoteServer{},
+		CpuGauge: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "cpu_usage",
+				Help: "CPU usage of a remote server in percentage",
+			},
+			[]string{"endpoint"},
+		),
+		MemGauge: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "mem_usage",
+				Help: "Memory usage of a remote server in percentage",
+			},
+			[]string{"endpoint"},
+		),
 	}
 }
 
@@ -30,11 +46,11 @@ func NewServerMonitor() ServerMonitor {
 // then distribute the request to that remote server.
 
 // I think Poll removes the node. Make a method to just get it. 
-func (sm *ServerMonitor) GetLeastBusy() (*server.RemoteServer, error) {
+func (sm *ServerMonitor) GetLeastBusy() (*server.ServerStats, error) {
 	return sm.Heap.Poll()
 }
 
-func (sm *ServerMonitor) WatchServers(ctx *gin.Context, cpuGauge prometheus.GaugeVec, memGauge prometheus.GaugeVec) {
+func (sm *ServerMonitor) WatchServers(ctx *gin.Context) {
 	timer := time.NewTicker(time.Second * 5)
 	client := &http.Client{
 		Timeout: time.Second * 10,
@@ -43,13 +59,13 @@ func (sm *ServerMonitor) WatchServers(ctx *gin.Context, cpuGauge prometheus.Gaug
 	for {
 		select {
 		case <-timer.C:
-			sm.GetMetrics(ctx, client, cpuGauge, memGauge)					
+			sm.GetMetrics(ctx, client)					
 			os.Exit(0)
 		}
 	}
 }
 
-func (sm *ServerMonitor) GetMetrics(ctx *gin.Context, client *http.Client, cpuGauge prometheus.GaugeVec, memGauge prometheus.GaugeVec) {
+func (sm *ServerMonitor) GetMetrics(ctx *gin.Context, client *http.Client) {
 	for _, server := range sm.Servers {
 		resp, err := client.Get(server.BaseUrl + "/metrics")		
 		if err != nil {
@@ -69,12 +85,12 @@ func (sm *ServerMonitor) GetMetrics(ctx *gin.Context, client *http.Client, cpuGa
 
 		if cpuValue, ok := metrics["node_cpu_stats"]; ok {
 			cpuValueToPrint = float64(cpuValue.GetMetric()[0].GetGauge().GetValue())
-			cpuGauge.WithLabelValues("something").Set(float64(cpuValue.GetMetric()[0].GetGauge().GetValue()))
+			sm.CpuGauge.WithLabelValues("something").Set(float64(cpuValue.GetMetric()[0].GetGauge().GetValue()))
 		}
 	
 		if memValue, ok := metrics["node_mem_stats"]; ok {
 			memValueToPrint = float64(memValue.GetMetric()[0].GetGauge().GetValue())
-			memGauge.WithLabelValues("endpoint").Set(float64(memValue.GetMetric()[0].GetGauge().GetValue()))
+			sm.MemGauge.WithLabelValues("endpoint").Set(float64(memValue.GetMetric()[0].GetGauge().GetValue()))
 		}
 
 		fmt.Printf("Got here. CPU = %.2f, Memory = %.2f\n", cpuValueToPrint, memValueToPrint)

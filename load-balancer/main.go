@@ -23,6 +23,12 @@ func main() {
 			},
 		},
 	}
-
-	router.GET("/test", sm.WatchServers)
+	
+	router.GET("/distribute", sm.WatchServers)
+	
+	err := router.Run("localhost:9090")
+	if err != nil {
+		panic("sem escandalo fml")
+	}
 }
+
