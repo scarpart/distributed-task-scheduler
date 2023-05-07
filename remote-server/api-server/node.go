@@ -5,8 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/scarpart/distributed-task-scheduler/api/enums"
-	db "github.com/scarpart/distributed-task-scheduler/db/sqlc"
+	db "github.com/scarpart/distributed-task-scheduler/remote-server/db/sqlc"
 )
 
 type CreateNodeRequest struct {
@@ -24,7 +23,7 @@ func (server *Server) CreateNode(ctx *gin.Context) {
 	arg := db.CreateNodeParams{
 		Hostname: req.Hostname,
 		IpAddr:   req.IpAddr,
-		Status:   enums.OnFree,
+		Status:   0,
 	}
 
 	node, err := server.store.CreateNode(ctx, arg)

@@ -1,22 +1,26 @@
 package apiserver
 
 import (
+	"net"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/gops/agent"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	db "github.com/scarpart/distributed-task-scheduler/remote-server/db/sqlc"
+	"github.com/shirou/gopsutil/process"
 )
 
 type Server struct {
+	ipAddr net.IP
 	store *db.Store
 	router *gin.Engine
 }
 
 // Constructs the server and sets up the routing
-func NewServer(store *db.Store) *Server {
-	server := &Server{store: store}
+func NewServer(store *db.Store, ipAddr net.IP) *Server {
+	server := &Server{store: store, ipAddr: ipAddr}
 	router := gin.Default()
 
 	// POST
@@ -28,7 +32,7 @@ func NewServer(store *db.Store) *Server {
 	//router.GET("/task", server.GetTask)
 	router.GET("/node/:node_id", server.GetNode)
 	router.GET("/node", server.GetAllNodes)
-	router.GET("/stats", server.GetStats)
+	//router.GET("/stats", server.GetStats)
 
 	// PROMETHEUS METRICS 
 	cpuUsage := prometheus.NewGaugeVec(
@@ -54,9 +58,9 @@ func NewServer(store *db.Store) *Server {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
-		cpuUsage.Set(cpu)
-		memUsage.Set(mem)	
-		prometheus.Handler().ServeHTTP(ctx.Writer, ctx.Request)
+		cpuUsage.With(prometheus.Labels{"endpoint": "someendpoint"}).Set(cpu)
+		memUsage.With(prometheus.Labels{"endpoint": "someendpoint"}).Set(mem)	
+		promhttp.Handler().ServeHTTP(ctx.Writer, ctx.Request)
 	})
 
 	server.router = router
@@ -64,8 +68,8 @@ func NewServer(store *db.Store) *Server {
 }
 
 // Run the HTTP server on the input address to listen to requests
-func (server *Server) Start(address string) error {
-	return server.router.Run(address)
+func (server *Server) Start() error {
+	return server.router.Run(server.ipAddr.String())
 }
 
 func errorResponse(err error) gin.H {
@@ -75,17 +79,20 @@ func errorResponse(err error) gin.H {
 }
 
 func getUsageStats() (float64, float64, error) {
-	pid := agent.ProcessID()
+	proc, err := process.NewProcess(int32(os.Getpid()))
+	if err != nil {
+		panic("aaa")
+	}
 
-	cpu, err := agent.CPUPercent(time.Second)
+	cpu, err := proc.CPUPercent()
 	if err != nil {
 		return 0, 0, err
 	}
 
-	mem, err := agent.MemoryUsage(pid)
+	mem, err := proc.MemoryPercent()
 	if err != nil {
 		return 0, 0, err
 	}
 
-	return cpu, mem, nil
+	return cpu, float64(mem), nil
 }

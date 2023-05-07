@@ -1,8 +1,9 @@
-package remoteserver
+package main 
 
 import (
 	"database/sql"
 	"log"
+	"net"
 
 	_ "github.com/lib/pq"
 	api "github.com/scarpart/distributed-task-scheduler/remote-server/api-server"
@@ -22,9 +23,9 @@ func main() {
 	}
 
 	store := db.NewStore(conn)
-	server := api.NewServer(store)
+	server := api.NewServer(store, net.IP(config.SERVER_ADDRESS))
 
-	err = server.Start(config.SERVER_ADDRESS)
+	err = server.Start()
 	if err != nil {
 		log.Fatal("could not start server:", err)
 	}

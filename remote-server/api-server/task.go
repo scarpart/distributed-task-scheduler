@@ -3,10 +3,9 @@ package apiserver
 import (
 	"database/sql"
 	"net/http"
-	
-	db "github.com/scarpart/distributed-task-scheduler/db/sqlc"
+
 	"github.com/gin-gonic/gin"
-	"github.com/scarpart/distributed-task-scheduler/api/enums"
+	db "github.com/scarpart/distributed-task-scheduler/remote-server/db/sqlc"
 )
 
 type CreateTaskRequest struct {
@@ -28,7 +27,7 @@ func (server *Server) CreateTask(ctx *gin.Context) {
 	arg := db.CreateTaskParams{
 		TaskName: req.TaskName,
 		TaskDescription: req.TaskDescription,
-		Status: enums.Ready, 
+		Status: 0, 
 		Priority: req.Priority,
 		Command: req.Command,
 	}
