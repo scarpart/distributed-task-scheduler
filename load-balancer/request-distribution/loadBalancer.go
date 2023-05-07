@@ -1,25 +1,18 @@
-package loadbalancer
+package requestdistribution 
 
 import (
-	"bufio"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"os/exec"
-	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/scarpart/distributed-task-scheduler/enums"
-	lbheap "github.com/scarpart/distributed-task-scheduler/load-balancer/lb-heap"
-	"github.com/scarpart/distributed-task-scheduler/load-balancer/server"
 )
 
 type LoadBalancer struct {
 	IpAddr  string
 	Port    string
-	Servers lbheap.Heap 
+	Servers Heap 
 	Status  enums.NodeStatus  
 	BaseUrl string
 }
@@ -28,7 +21,7 @@ func NewLoadBalancer() LoadBalancer {
 	return LoadBalancer{
 		IpAddr: "127.0.0.1",
 		Port: "8080",
-		Servers: lbheap.NewHeap(),
+		Servers: NewHeap(),
 		Status: 1, // TODO: fix this 
 		BaseUrl: "127.0.0.1:8080/",
 	}
@@ -84,9 +77,9 @@ func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 // Uses a Heap data structure to store the servers, updating their priorities
 // according to CPU and Memory usage, and (maybe) default and hand-picked weights
 // depending on their performance. 
-func (lb *LoadBalancer) SelectServer() server.RemoteServer {
-	// TODO
-	return server.RemoteServer{}
-}
+//func (lb *LoadBalancer) SelectServer() server.RemoteServer {
+//	// TODO
+//	return server.RemoteServer{}
+//}
 
 

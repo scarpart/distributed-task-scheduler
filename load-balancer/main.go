@@ -1,34 +1,28 @@
-package loadbalancer
+package main
 
 import (
-	"database/sql"
-	"log"
-
+	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
-	"github.com/scarpart/distributed-task-scheduler/util"
+	requestdistribution "github.com/scarpart/distributed-task-scheduler/load-balancer/request-distribution"
+	"github.com/scarpart/distributed-task-scheduler/load-balancer/server"
 )
 
 func main() {
-	config, err := util.LoadConfig(".")
-	if err != nil {
-		log.Fatal("Could not read .env config file:", err)
+	router := *gin.Default()
+
+	sm := requestdistribution.ServerMonitor{
+		Heap: requestdistribution.NewHeap(),
+		Servers: [] server.RemoteServer{
+			{
+				IpAddr: "127.0.0.1:8081",
+				BaseUrl: "localhost:8081",	
+			},
+			{
+				IpAddr: "127.0.0.1:8080",
+				BaseUrl: "localhost:8080",	
+			},
+		},
 	}
 
-	conn, err := sql.Open(config.DB_DRIVER, config.DB_SOURCE)
-	if err != nil {
-		log.Fatal("cannot connect to the database:", err)
-	}
-
-//	store := db.NewStore(conn)
-//	server := ap.NewServer(store)
-//
-//	test := loadbalancer.Server{}
-//	test.GetServerStatus()
-
-	err = server.Start(config.SERVER_ADDRESS)
-	if err != nil {
-		log.Fatal("could not start server:", err)
-	}
-
-
+	router.GET("/test", sm.WatchServers)
 }
