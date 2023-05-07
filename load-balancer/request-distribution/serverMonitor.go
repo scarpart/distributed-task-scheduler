@@ -51,7 +51,7 @@ func (sm *ServerMonitor) GetLeastBusy() (*server.ServerStats, error) {
 }
 
 func (sm *ServerMonitor) WatchServers(ctx *gin.Context) {
-	timer := time.NewTicker(time.Second * 5)
+	timer := time.NewTicker(time.Second * 15)
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}	
