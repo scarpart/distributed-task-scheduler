@@ -12,7 +12,9 @@ var (
 )
 
 func init() {
-	file, err := os.OpenFile("logs/api_logs.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	// The file path below should be relative, but for some reason it's returning errors even though the path should be correct.
+	// I'm leaving the entire path here for now, just to make it work, then I'm going to change things around a bit. 
+	file, err := os.OpenFile("/home/artzmeister/code/portfolio/distributed-task-scheduler/logs/api_logs.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatal("Could not set up logger:", err)
 		return

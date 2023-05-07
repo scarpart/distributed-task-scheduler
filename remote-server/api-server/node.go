@@ -1,12 +1,11 @@
-package api
+package apiserver
 
 import (
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/scarpart/distributed-task-scheduler/api/enums"
-	db "github.com/scarpart/distributed-task-scheduler/db/sqlc"
+	db "github.com/scarpart/distributed-task-scheduler/remote-server/db/sqlc"
 )
 
 type CreateNodeRequest struct {
@@ -24,7 +23,7 @@ func (server *Server) CreateNode(ctx *gin.Context) {
 	arg := db.CreateNodeParams{
 		Hostname: req.Hostname,
 		IpAddr:   req.IpAddr,
-		Status:   enums.OnFree,
+		Status:   0,
 	}
 
 	node, err := server.store.CreateNode(ctx, arg)
@@ -50,4 +49,30 @@ func (server *Server) GetNode(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, node)
+}
+
+type GetAllNodesRequest struct {
+	Limit int32 `json:"limit" binding:"required"`
+	Offset int32 `json:"offset" binding:"required"`
+}
+
+func (server *Server) GetAllNodes(ctx *gin.Context) {
+	var req GetAllNodesRequest 
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.GetAllNodesParams{
+		Limit: req.Limit,
+		Offset: req.Offset,
+	}
+	
+	nodes, err := server.store.GetAllNodes(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, nodes)
 }
