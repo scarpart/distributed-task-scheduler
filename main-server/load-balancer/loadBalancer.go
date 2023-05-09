@@ -46,9 +46,29 @@ func NewLoadBalancer() *LoadBalancer {
 	return lb
 }
 
+func (lb *LoadBalancer) InitRemoteServers(addrToKey map[string]string) {
+	for addr, apiKey := range addrToKey {
+		server := &RemoteServer{
+			URL: addr,
+			ApiKey: apiKey,
+		}
+		lb.Servers.Add(server)	
+		go server.HealthCheck()	
+	}
+}
+
 func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
-	server := lb.Servers.Root()
+	server := lb.Servers.LeastConnections()
+
+	server.Mutex.Lock()
+	isAvailable := server.IsAvailable 
+	server.Mutex.Unlock()
 	
+	if !isAvailable {
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
 	// Creates the request to be executed by the HTTP Client
 	req, err := http.NewRequest(ctx.Request.Method, server.URL() + ctx.Request.URL.Path, ctx.Request.Body)
 	if err != nil {
@@ -120,5 +140,4 @@ func (lb LoadBalancer) WithPort(port string) LoadBalancer {
 	lb.port = port
 	return lb
 }
-
 

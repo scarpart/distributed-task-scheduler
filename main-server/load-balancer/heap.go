@@ -25,6 +25,12 @@ func (heap *Heap) Root() (*RemoteServer, error) {
 	return heap.Array[0], nil
 }
 
+// Returns the root element of the min heap
+func (heap *Heap) LeastConnections() *RemoteServer {
+	leastConns := heap.Array[0]
+	return leastConns	
+}
+
 func (heap *Heap) Poll() (*RemoteServer, error) {
 	if (heap.Size <= 0) { return nil, errors.New("The heap is empty.") }
 	firstServer := heap.Array[0]
