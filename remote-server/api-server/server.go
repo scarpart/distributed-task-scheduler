@@ -2,6 +2,7 @@ package apiserver
 
 import (
 	"net"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/scarpart/distributed-task-scheduler/remote-server/db/sqlc"
@@ -18,6 +19,11 @@ func NewServer(store *db.Store, ipAddr net.IP) *Server {
 	server := &Server{store: store, ipAddr: ipAddr}
 	router := gin.Default()
 
+	// Health Check (accessed by the Load Balancer)
+	router.GET("/health", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, nil)
+	})
+	
 	// POST
 	router.POST("/task", server.CreateTask)
 	router.POST("/node", server.CreateNode)
