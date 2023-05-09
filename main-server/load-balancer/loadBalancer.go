@@ -20,9 +20,14 @@ type LoadBalancer struct {
 }
 
 func NewLoadBalancer() *LoadBalancer {
+	// The HTTP Transport ensures that the remote servers have a concurrent connection cap and do not get overwhelmed
 	lb := &LoadBalancer{
 		Servers: NewHeap(),
-		client: &http.Client{},
+		client: &http.Client{
+			Transport: &http.Transport{
+				MaxConnsPerHost: 10,
+			},
+		},
 	}
 
 	router := gin.Default()
@@ -50,7 +55,11 @@ func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-	
+
+	for k, v := range ctx.Request.Header {
+		req.Header[k] = v
+	}
+
 	// Updates the connection counter for the server and fixes the heap property
 	lb.UpdateConnections(server, 1)
 

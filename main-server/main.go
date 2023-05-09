@@ -4,7 +4,6 @@ import (
 	"log"
 	"net"
 
-	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	loadbalancer "github.com/scarpart/distributed-task-scheduler/main-server/load-balancer"
 	"github.com/scarpart/distributed-task-scheduler/util"
