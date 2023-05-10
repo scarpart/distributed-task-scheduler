@@ -1,7 +1,6 @@
 package apiserver
 
 import (
-	"net"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,14 +8,14 @@ import (
 )
 
 type Server struct {
-	ipAddr net.IP
-	store *db.Store
-	router *gin.Engine
+	addr    string
+	store   *db.Store
+	router  *gin.Engine
 }
 
 // Constructs the server and sets up the routing
-func NewServer(store *db.Store, ipAddr net.IP) *Server {
-	server := &Server{store: store, ipAddr: ipAddr}
+func NewServer(store *db.Store, addr string) *Server {
+	server := &Server{store: store, addr: addr}
 	router := gin.Default()
 
 	// Health Check (accessed by the Load Balancer)
@@ -40,7 +39,7 @@ func NewServer(store *db.Store, ipAddr net.IP) *Server {
 
 // Run the HTTP server on the input address to listen to requests
 func (server *Server) Start() error {
-	return server.router.Run(server.ipAddr.String())
+	return server.router.Run(server.addr)
 }
 
 func errorResponse(err error) gin.H {

@@ -3,7 +3,6 @@ package loadbalancer
 import (
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"sync"
 
@@ -11,19 +10,19 @@ import (
 )
 
 type LoadBalancer struct {
-	ipAddr      net.IP	
-	port    	string
-	Servers  	Heap 
+	URL         string
+	Servers  	*Heap 
 	mutex		sync.Mutex
-	client      *http.Client
+	client      http.Client
 	Router      *gin.Engine
 }
 
 func NewLoadBalancer() *LoadBalancer {
 	// The HTTP Transport ensures that the remote servers have a concurrent connection cap and do not get overwhelmed
 	lb := &LoadBalancer{
-		Servers: NewHeap(),
-		client: &http.Client{
+		Servers: &Heap{},  
+		mutex: sync.Mutex{}, 
+		client: http.Client{
 			Transport: &http.Transport{
 				MaxConnsPerHost: 10,
 			},
@@ -47,30 +46,43 @@ func NewLoadBalancer() *LoadBalancer {
 }
 
 func (lb *LoadBalancer) InitRemoteServers(addrToKey map[string]string) {
-	for addr, apiKey := range addrToKey {
+	for addr := range addrToKey {
 		server := &RemoteServer{
 			URL: addr,
-			ApiKey: apiKey,
+			Mutex: sync.Mutex{},
+			//ApiKey: apiKey,
 		}
 		lb.Servers.Add(server)	
+		fmt.Printf("from initRemoteServers: %v\n", server)
 		go server.HealthCheck()	
 	}
 }
 
 func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 	server := lb.Servers.LeastConnections()
+	if server == nil {
+		fmt.Println("server is nil")
+		return 
+	}
+
+	fmt.Println("server is not nil")
+	fmt.Printf("s.conns = %d\n", server.Connections)
+	fmt.Printf("s.url = %s\n",server.URL)
 
 	server.Mutex.Lock()
 	isAvailable := server.IsAvailable 
 	server.Mutex.Unlock()
-	
+
+	fmt.Println(isAvailable)
+
 	if !isAvailable {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
 	// Creates the request to be executed by the HTTP Client
-	req, err := http.NewRequest(ctx.Request.Method, server.URL() + ctx.Request.URL.Path, ctx.Request.Body)
+	req, err := http.NewRequest(ctx.Request.Method, server.URL + ctx.Request.URL.Path, ctx.Request.Body)
+	fmt.Println("request", req)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
@@ -122,7 +134,8 @@ func (lb *LoadBalancer) SendRequest(ctx *gin.Context, server *RemoteServer, req 
 }
 
 func (lb *LoadBalancer) Start() error {
-	return lb.Router.Run(lb.ipAddr.String()) 
+	fmt.Printf("on Start: %v\n", lb.Servers)
+	return lb.Router.Run(lb.URL)
 }
 
 func errorResponse(err error) gin.H {
@@ -131,13 +144,8 @@ func errorResponse(err error) gin.H {
 	}
 }
 
-func (lb LoadBalancer) WithIpAddr(ip net.IP) LoadBalancer {
-	lb.ipAddr = ip
+func (lb LoadBalancer) WithServerAddr(addr string) LoadBalancer {
+	lb.URL = addr 
 	return lb
 }	
-
-func (lb LoadBalancer) WithPort(port string) LoadBalancer {
-	lb.port = port
-	return lb
-}
 

@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"log"
-	"net"
 
 	_ "github.com/lib/pq"
 	api "github.com/scarpart/distributed-task-scheduler/remote-server/api-server"
@@ -12,7 +11,7 @@ import (
 )
 
 func main() {
-	config, err := util.LoadConfig(".")
+	config, err := util.LoadConfig("./remote-server/")
 	if err != nil {
 		log.Fatal("Could not read .env config file:", err)
 	}
@@ -23,7 +22,7 @@ func main() {
 	}
 
 	store := db.NewStore(conn)
-	server := api.NewServer(store, net.IP(config.SERVER_ADDRESS))
+	server := api.NewServer(store, config.SERVER_ADDRESS)
 
 	err = server.Start()
 	if err != nil {

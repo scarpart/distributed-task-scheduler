@@ -1,37 +1,29 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"net"
 
 	_ "github.com/lib/pq"
 	loadbalancer "github.com/scarpart/distributed-task-scheduler/main-server/load-balancer"
 	"github.com/scarpart/distributed-task-scheduler/util"
 )
 
-var lb *loadbalancer.LoadBalancer 
-
 func main() {
-	config, err := util.LoadConfig(".")
+	addrToKey := make(map[string]string)
+
+	config, err := util.LoadConfig("./main-server/")
 	if err != nil {
-		log.Fatal("Could not read .evn config file:", err)
+		log.Fatal("Could not read .env config file:", err)
 	}
 	
 	lb := loadbalancer.NewLoadBalancer().
-		WithIpAddr(net.IP(config.SERVER_ADDRESS)).
-		WithPort(config.PORT)
+		WithServerAddr(config.SERVER_ADDRESS)
 
-	server1 := &loadbalancer.RemoteServer{
-		IpAddr: "127.0.0.1",
-		Port: "8080", 
-	}
-	server2 := &loadbalancer.RemoteServer{
-		IpAddr: "127.0.0.1",
-		Port: "8081", 
-	}
-	
-	lb.Servers.Add(server1)
-	lb.Servers.Add(server2)
+	addrToKey["http://127.0.0.1:8080"] = ""
+ 	lb.InitRemoteServers(addrToKey)
+
+	fmt.Printf("here in main after add: %v\n", lb.Servers)
 
 	err = lb.Start()
 	if err != nil {
