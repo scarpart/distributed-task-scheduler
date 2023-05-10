@@ -1,10 +1,10 @@
-package api
+package apiserver
 
 import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	db "github.com/scarpart/distributed-task-scheduler/db/sqlc"
+	db "github.com/scarpart/distributed-task-scheduler/remote-server/db/sqlc"
 )
 
 type CreateMappingRequest struct {
@@ -33,3 +33,4 @@ func (server *Server) CreateMapping(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, mapping)
 }
+
