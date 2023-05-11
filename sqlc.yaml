@@ -3,9 +3,9 @@ project:
     id: ""
 packages: 
  - name: "db"
-   path: "./db/sqlc"
-   queries: "./db/query"
-   schema: "./db/migration"
+   path: "./remote-server/db/sqlc"
+   queries: "./remote-server/db/query"
+   schema: "./remote-server/db/migration/000001_init_schema.up.sql"
    engine: "postgresql"
    emit_json_tags: true
    emit_prepared_queries: false

@@ -1,8 +1,10 @@
 package apiserver
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/scarpart/distributed-task-scheduler/remote-server/db/sqlc"
@@ -14,8 +16,11 @@ type CreateNodeRequest struct {
 }
 
 func (server *Server) CreateNode(ctx *gin.Context) {
+	fmt.Println("On CreateNode")
+
 	var req CreateNodeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		fmt.Println("Could not bind json (1):", err)
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -28,6 +33,7 @@ func (server *Server) CreateNode(ctx *gin.Context) {
 
 	node, err := server.store.CreateNode(ctx, arg)
 	if err != nil {
+		fmt.Println("Err (2):", err)
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -57,22 +63,47 @@ type GetAllNodesRequest struct {
 }
 
 func (server *Server) GetAllNodes(ctx *gin.Context) {
-	var req GetAllNodesRequest 
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	fmt.Println("On GetAllNodes")
+
+	// Parsing query parameters, since this is a GET request
+	limitParam := ctx.Query("limit")
+	if limitParam == "" {
+		limitParam = "10"
+	}
+	offsetParam := ctx.Query("offset")
+	if offsetParam == "" {
+		offsetParam = "0"
+	}
+
+	limit, err := strconv.ParseInt(limitParam, 10, 32)
+	if err != nil {
+		fmt.Println("Invalid limit parameter", err)
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	offset, err := strconv.ParseInt(offsetParam, 10, 32)
+	if err != nil {
+		fmt.Println("Invalid offset parameter", err)
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
+	fmt.Println("limit:", limit)
+	fmt.Println("offset:", offset)
+
 	arg := db.GetAllNodesParams{
-		Limit: req.Limit,
-		Offset: req.Offset,
+		Limit: int32(limit), 
+		Offset: int32(offset),
 	}
 	
 	nodes, err := server.store.GetAllNodes(ctx, arg)
 	if err != nil {
+		fmt.Println("on second error check", err)
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
+	fmt.Println(nodes)
 	ctx.JSON(http.StatusOK, nodes)
 }
+

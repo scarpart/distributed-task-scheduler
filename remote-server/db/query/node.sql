@@ -1,11 +1,10 @@
 -- name: CreateNode :one
 INSERT INTO "Nodes" (
-	node_id,
 	hostname,
 	ip_addr,
 	status
 ) VALUES (
-	$1, $2, $3, $4
+	$1, $2, $3
 ) RETURNING *;
 
 -- name: GetNode :one

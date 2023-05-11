@@ -33,3 +33,4 @@ func (server *Server) CreateMapping(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, mapping)
 }
+

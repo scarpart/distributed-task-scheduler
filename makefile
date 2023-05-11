@@ -14,18 +14,15 @@ migratedown:
 	migrate -path db/migration -database "postgresql://taskmanager:distributed-tasks@localhost:5432/distributed_task_scheduler_db?sslmode=disable" -verbose down
 
 sqlc:
-	sqlc generate
+	sqlc generate 
 
 test:
 	go test -v -cover ./...
 
-lb:
-	go run load-balancer/main.go 
+main:
+	go run main-server/main.go 
 
 server:
 	go run remote-server/main.go
 
-buildtest:
-	go build -o remoteservermain remote-server/main.go
-
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test lb server buildtest
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test main server 
