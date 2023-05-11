@@ -11,22 +11,20 @@ import (
 
 const createLog = `-- name: CreateLog :one
 INSERT INTO "Logs" (
-	log_id,
 	task_id,
 	message
 ) VALUES (
-	$1, $2, $3
+	$1, $2
 ) RETURNING log_id, task_id, message, created_at
 `
 
 type CreateLogParams struct {
-	LogID   int64  `json:"log_id"`
 	TaskID  int64  `json:"task_id"`
 	Message string `json:"message"`
 }
 
 func (q *Queries) CreateLog(ctx context.Context, arg CreateLogParams) (Log, error) {
-	row := q.db.QueryRowContext(ctx, createLog, arg.LogID, arg.TaskID, arg.Message)
+	row := q.db.QueryRowContext(ctx, createLog, arg.TaskID, arg.Message)
 	var i Log
 	err := row.Scan(
 		&i.LogID,

@@ -12,19 +12,17 @@ import (
 
 const createTask = `-- name: CreateTask :one
 INSERT INTO "Tasks" (
-    user_id,
     task_name,
     task_description,
     status,
     priority,
     command
 ) VALUES (
-    $1, $2, $3, $4, $5, $6
+    $1, $2, $3, $4, $5
 ) RETURNING task_id, user_id, task_name, task_description, status, priority, command, created_at
 `
 
 type CreateTaskParams struct {
-	UserID          int64         `json:"user_id"`
 	TaskName        string        `json:"task_name"`
 	TaskDescription string        `json:"task_description"`
 	Status          int32         `json:"status"`
@@ -34,7 +32,6 @@ type CreateTaskParams struct {
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRowContext(ctx, createTask,
-		arg.UserID,
 		arg.TaskName,
 		arg.TaskDescription,
 		arg.Status,
