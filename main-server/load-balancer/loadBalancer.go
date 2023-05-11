@@ -103,6 +103,7 @@ func (lb *LoadBalancer) InitRemoteServers(addrToKey map[string]string) {
 
 func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 	server := lb.Servers.LeastConnections()
+	fmt.Printf("Connections for %s at the start of DistributeRequest: %d\n", server.URL, server.Connections)
 	if server == nil {
 		return 
 	}
@@ -132,6 +133,7 @@ func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 
 	// Updates the connection counter for the server and fixes the heap property
 	lb.UpdateConnections(server, 1)
+	fmt.Printf("Connections for %s after UpdatingConnections: %d\n", server.URL, server.Connections)
 
 	body, statusCode, contentType, err := lb.SendRequest(ctx, server, req)
 	if err != nil {
@@ -141,6 +143,7 @@ func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 	}	
 
 	lb.UpdateConnections(server, -1)
+	fmt.Printf("Connections for %s after UpdatingConnections (-1): %d\n", server.URL, server.Connections)
 
 	ctx.Data(statusCode, contentType, body)
 }

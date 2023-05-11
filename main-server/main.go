@@ -21,6 +21,7 @@ func main() {
 		WithServerAddr(config.SERVER_ADDRESS)
 
 	addrToKey["http://127.0.0.1:8080"] = ""
+	addrToKey["http://127.0.0.1:8081"] = ""
  	lb.InitRemoteServers(addrToKey)
 
 	fmt.Printf("here in main after add: %v\n", lb.Servers)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/scarpart/distributed-task-scheduler/remote-server/db/sqlc"
@@ -15,31 +16,36 @@ type CreateNodeRequest struct {
 }
 
 func (server *Server) CreateNode(ctx *gin.Context) {
-	fmt.Println("On CreateNode")
-
-	var req CreateNodeRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		fmt.Println("Could not bind json (1):", err)
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	arg := db.CreateNodeParams{
-		Hostname: req.Hostname,
-		IpAddr:   req.IpAddr,
-		Status:   0,
-	}
-
-	node, err := server.store.CreateNode(ctx, arg)
-	if err != nil {
-		fmt.Println("Err (2):", err)
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, node)
+	time.Sleep(5 * time.Second)
+	ctx.JSON(http.StatusOK, nil)
 }
 
+//func (server *Server) CreateNode(ctx *gin.Context) {
+//	fmt.Println("On CreateNode")
+//
+//	var req CreateNodeRequest
+//	if err := ctx.ShouldBindJSON(&req); err != nil {
+//		fmt.Println("Could not bind json (1):", err)
+//		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+//		return
+//	}
+//
+//	arg := db.CreateNodeParams{
+//		Hostname: req.Hostname,
+//		IpAddr:   req.IpAddr,
+//		Status:   0,
+//	}
+//
+//	node, err := server.store.CreateNode(ctx, arg)
+//	if err != nil {
+//		fmt.Println("Err (2):", err)
+//		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+//		return
+//	}
+//
+//	ctx.JSON(http.StatusOK, node)
+//}
+//
 func (server *Server) GetNode(ctx *gin.Context) {
 	nodeId, err := strconv.Atoi(ctx.Param("node_id"))
 	if err != nil {
