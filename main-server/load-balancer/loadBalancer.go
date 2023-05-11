@@ -4,10 +4,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/scarpart/distributed-task-scheduler/util"
 )
 
 type LoadBalancer struct {
@@ -16,16 +19,23 @@ type LoadBalancer struct {
 	mutex		sync.Mutex
 	client      http.Client
 	Router      *gin.Engine
+	config 		util.Config
 }
 
 func NewLoadBalancer() *LoadBalancer {
+	config, err := util.LoadConfig("./main-server")
+	if err != nil {
+		log.Println("Could not read LB Client configs. Using default values.", err)
+	}
 	// The HTTP Transport ensures that the remote servers have a concurrent connection cap and do not get overwhelmed
 	lb := &LoadBalancer{
 		Servers: &Heap{},  
+		config: config,
 		mutex: sync.Mutex{}, 
 		client: http.Client{
+			Timeout: time.Duration(config.LB_CONN_TIMEOUT) * time.Second,
 			Transport: &http.Transport{
-				MaxConnsPerHost: 10,
+				MaxConnsPerHost: int(config.LB_CLIENT_MAX_CONNS),
 			},
 		},
 	}
@@ -46,6 +56,39 @@ func NewLoadBalancer() *LoadBalancer {
 	return lb
 }
 
+func (lb *LoadBalancer) ServerHealthChecks(interval time.Duration) {
+	for {
+		lb.mutex.Lock()	
+		for _, server := range *lb.Servers {
+			url := server.URL + "/health"
+			
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				log.Println("Could not perform health check for server", server.URL, err)
+				continue
+			}
+
+			resp, err := lb.client.Do(req)
+			if err != nil {
+				log.Println("Error in the response of server", server.URL, err)
+				continue
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				log.Println("Server unavailable", server.URL, err)
+				server.Mutex.Lock()
+				server.IsAvailable = false
+				server.Mutex.Unlock()
+			} else {
+				server.IsAvailable = true
+			}
+
+		}
+		lb.mutex.Unlock()
+		time.Sleep(interval)
+	}
+}
+
 func (lb *LoadBalancer) InitRemoteServers(addrToKey map[string]string) {
 	for addr := range addrToKey {
 		server := &RemoteServer{
@@ -54,21 +97,15 @@ func (lb *LoadBalancer) InitRemoteServers(addrToKey map[string]string) {
 			//ApiKey: apiKey,
 		}
 		lb.Servers.Add(server)	
-		fmt.Printf("from initRemoteServers: %v\n", server)
-		go server.HealthCheck()	
 	}
+	go lb.ServerHealthChecks(time.Second * time.Duration(lb.config.LB_HEALTH_CHECK_INTERVAL))
 }
 
 func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 	server := lb.Servers.LeastConnections()
 	if server == nil {
-		fmt.Println("server is nil")
 		return 
 	}
-
-	fmt.Println("server is not nil")
-	fmt.Printf("s.conns = %d\n", server.Connections)
-	fmt.Printf("s.url = %s\n",server.URL)
 
 	server.Mutex.Lock()
 	isAvailable := server.IsAvailable 
@@ -82,7 +119,7 @@ func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 	}
 
 	// Creates the request to be executed by the HTTP Client
-	req, err := http.NewRequest(ctx.Request.Method, server.URL + ctx.Request.URL.Path, ctx.Request.Body)
+	req, err := http.NewRequest(ctx.Request.Method, server.URL + ctx.Request.URL.Path + "?" + ctx.Request.URL.RawQuery, ctx.Request.Body)
 	fmt.Println("request", req)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusInternalServerError)

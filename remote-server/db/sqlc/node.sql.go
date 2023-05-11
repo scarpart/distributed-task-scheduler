@@ -11,29 +11,22 @@ import (
 
 const createNode = `-- name: CreateNode :one
 INSERT INTO "Nodes" (
-	node_id,
 	hostname,
 	ip_addr,
 	status
 ) VALUES (
-	$1, $2, $3, $4
+	$1, $2, $3
 ) RETURNING node_id, hostname, ip_addr, status, created_at, updated_at
 `
 
 type CreateNodeParams struct {
-	NodeID   int64  `json:"node_id"`
 	Hostname string `json:"hostname"`
 	IpAddr   string `json:"ip_addr"`
 	Status   int32  `json:"status"`
 }
 
 func (q *Queries) CreateNode(ctx context.Context, arg CreateNodeParams) (Node, error) {
-	row := q.db.QueryRowContext(ctx, createNode,
-		arg.NodeID,
-		arg.Hostname,
-		arg.IpAddr,
-		arg.Status,
-	)
+	row := q.db.QueryRowContext(ctx, createNode, arg.Hostname, arg.IpAddr, arg.Status)
 	var i Node
 	err := row.Scan(
 		&i.NodeID,
