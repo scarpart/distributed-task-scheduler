@@ -1,6 +1,7 @@
 package loadbalancer
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -133,9 +134,30 @@ func (lb *LoadBalancer) SendRequest(ctx *gin.Context, server *RemoteServer, req 
 	return body, resp.StatusCode, resp.Header.Get("Content-Type"), nil
 }
 
-func (lb *LoadBalancer) Start() error {
-	fmt.Printf("on Start: %v\n", lb.Servers)
-	return lb.Router.Run(lb.URL)
+func (lb *LoadBalancer) Start(certFile, keyFile string) error {
+	// Configuring TLS such that we have secure HTTPS connections
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		CurvePreferences: []tls.CurveID{
+			tls.CurveP521,
+			tls.CurveP384,
+			tls.CurveP256,
+		},
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+		},
+		PreferServerCipherSuites: true,
+	}
+
+	httpsServer := &http.Server{
+		Addr: lb.URL,
+		Handler: lb.Router,
+		TLSConfig: tlsConfig,
+	}
+
+	return httpsServer.ListenAndServeTLS(certFile, keyFile)
 }
 
 func errorResponse(err error) gin.H {
