@@ -7,9 +7,13 @@ INSERT INTO "Users" (
 	$1, $2, $3
 ) RETURNING *;
 
+-- name: GetAPIKeys :one
+SELECT * FROM "Users"
+WHERE api_key = $1 LIMIT 1;
+
 -- name: GetUser :one
 SELECT * FROM "Users"
-WHERE user_id = $1 LIMIT $1;
+WHERE user_id = $1 LIMIT 1;
 
 -- name: GetAllUsers :many
 SELECT * FROM "Users"
