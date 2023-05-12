@@ -8,11 +8,16 @@ INSERT INTO "Users" (
 ) RETURNING *;
 
 -- name: GetAPIKeys :one
-SELECT * FROM "Users"
+SELECT * FROM "Users" 
 WHERE api_key = $1 LIMIT 1;
 
+-- name: GetUserByUsername :one 
+SELECT * FROM "Users" 
+WHERE username = $1 
+LIMIT 1;
+
 -- name: GetUser :one
-SELECT * FROM "Users"
+SELECT * FROM "Users" 
 WHERE user_id = $1 LIMIT 1;
 
 -- name: GetAllUsers :many
@@ -31,7 +36,13 @@ SET password = $4, email = $3, username = $2
 WHERE user_id = $1
 RETURNING *; 
 
--- name: UpdateUserUsername :one
+-- name: SetUserAPIKey :exec
+UPDATE "Users"
+SET api_key = $2
+WHERE user_id = $1
+RETURNING *; 
+
+-- name: UpdateUserUsername :one 
 UPDATE "Users"
 SET username = $2
 WHERE user_id = $1

@@ -77,9 +77,15 @@ func (server *Server) Start(certFile, keyFile string) error {
 	return httpsServer.ListenAndServeTLS(certFile, keyFile)
 }
 
+// The two functions below are not meant to be the same, I'm going to be changing errorResponse probably
 func errorResponse(err error) gin.H {
 	return gin.H{
 		"error": err.Error(),
 	}
 }
 
+func genericErrorResponse(err string) gin.H {
+	return gin.H{
+		"generic-error": err,
+	}
+}

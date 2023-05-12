@@ -27,3 +27,4 @@ func (server *Server) ValidateKeys() gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+

@@ -52,7 +52,7 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int32) error {
 }
 
 const getAPIKeys = `-- name: GetAPIKeys :one
-SELECT user_id, username, password, api_key, email, created_at, updated_at FROM "Users"
+SELECT user_id, username, password, api_key, email, created_at, updated_at FROM "Users" 
 WHERE api_key = $1 LIMIT 1
 `
 
@@ -115,7 +115,7 @@ func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]Use
 }
 
 const getUser = `-- name: GetUser :one
-SELECT user_id, username, password, api_key, email, created_at, updated_at FROM "Users"
+SELECT user_id, username, password, api_key, email, created_at, updated_at FROM "Users" 
 WHERE user_id = $1 LIMIT 1
 `
 
@@ -132,6 +132,44 @@ func (q *Queries) GetUser(ctx context.Context, userID int32) (User, error) {
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT user_id, username, password, api_key, email, created_at, updated_at FROM "Users" 
+WHERE username = $1 
+LIMIT 1
+`
+
+func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByUsername, username)
+	var i User
+	err := row.Scan(
+		&i.UserID,
+		&i.Username,
+		&i.Password,
+		&i.ApiKey,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const setUserAPIKey = `-- name: SetUserAPIKey :exec
+UPDATE "Users"
+SET api_key = $2
+WHERE user_id = $1
+RETURNING user_id, username, password, api_key, email, created_at, updated_at
+`
+
+type SetUserAPIKeyParams struct {
+	UserID int32          `json:"user_id"`
+	ApiKey sql.NullString `json:"api_key"`
+}
+
+func (q *Queries) SetUserAPIKey(ctx context.Context, arg SetUserAPIKeyParams) error {
+	_, err := q.db.ExecContext(ctx, setUserAPIKey, arg.UserID, arg.ApiKey)
+	return err
 }
 
 const updateUser = `-- name: UpdateUser :one
