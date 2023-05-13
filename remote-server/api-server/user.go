@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/scarpart/distributed-task-scheduler/remote-server/db/sqlc"
@@ -108,6 +109,82 @@ func (server *Server) CreateUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, user)	
+}
+
+type UpdateUserParams struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Email    string `json:"email"    binding:"required"`
+}	
+
+func (server *Server) UpdateUser(ctx *gin.Context) {
+	var req UpdateUserParams
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	
+	user, err := server.store.GetUserByUsername(ctx, req.Username)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	hashPassword, err := hashPassword(req.Password)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	arg := db.UpdateUserParams{
+		UserID: user.UserID,
+		Username: req.Username,
+		Email: req.Email, 
+		Password: string(hashPassword[:]),
+	}
+
+	user, err = server.store.UpdateUser(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, user)
+}
+
+func (server *Server) GetAllUsers(ctx *gin.Context) {
+	limitParam := ctx.Query("limit")
+	if limitParam == "" {
+		limitParam = "10"
+	}
+	offsetParam := ctx.Query("offset")
+	if offsetParam == "" {
+		offsetParam = "0"
+	}
+	
+	limit, err := strconv.ParseInt(limitParam, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	offset, err := strconv.ParseInt(offsetParam, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	
+	arg := db.GetAllUsersParams{
+		Limit: int32(limit),
+		Offset: int32(offset),
+	}	
+
+	users, err := server.store.GetAllUsers(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, users)
 }
 
 func hashPassword(password string) ([]byte, error) {
