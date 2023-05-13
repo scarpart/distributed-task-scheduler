@@ -14,7 +14,7 @@ migratedown:
 	migrate -path db/migration -database "postgresql://taskmanager:distributed-tasks@localhost:5432/distributed_task_scheduler_db?sslmode=disable" -verbose down
 
 sqlc:
-	sqlc generate
+	sqlc generate 
 
 test:
 	go test -v -cover ./...

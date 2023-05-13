@@ -24,8 +24,8 @@ func main() {
 	store := db.NewStore(conn)
 	server := api.NewServer(store, config.SERVER_ADDRESS)
 
-	err = server.Start()
+	err = server.Start("remote-server/certs/cert.pem", "remote-server/certs/key.pem")
 	if err != nil {
-		log.Fatal("could not start server:", err)
+		log.Fatal("Could not start the HTTPS server:", err)
 	}
 }

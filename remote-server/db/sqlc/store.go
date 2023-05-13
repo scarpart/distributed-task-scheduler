@@ -22,6 +22,10 @@ func NewStore(db *sql.DB) *Store {
 	}
 }
 
+func (store *Store) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
+	return store.db.BeginTx(ctx, opts)
+}
+
 // Executes a function within a database transaction
 func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
 	logger.InfoLogger.Println("Executing transaction")

@@ -72,12 +72,16 @@ func (heap *Heap) GetServerIndex(server *RemoteServer) (int, error) {
 func (heap *Heap) Fix(server *RemoteServer) {
 	index, err := heap.GetServerIndex(server)
 	if err != nil {
+		fmt.Println("err is not nil", err)
 		return // handle this better, probably (since the heap is guaranteed to work, i think there is no need for an error)
 	}
 
-	if heap.Parent(index) < server.Connections {
+	fmt.Println("ongoing formatting heap")
+	if heap.Parent(index) <= server.Connections {
+		fmt.Println("heapifying down (correct)")
 		heap.HeapifyDown(index)	
 	} else {
+		fmt.Println("heapifying up (incorrect)")
 		heap.HeapifyUp(index)
 	}
 }
@@ -106,7 +110,7 @@ func (heap *Heap) RightChild(index int) int32 {
 	return server.Connections
 } 
 
-func (heap *Heap) Parent(index int) int32 { 
+func (heap *Heap) Parent(index int) int32 { 	
 	server := (*heap)[heap.GetParentIndex(index)]
 	return server.Connections
 } 

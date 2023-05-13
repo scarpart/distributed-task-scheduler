@@ -11,22 +11,20 @@ import (
 
 const createTaskNodeMapping = `-- name: CreateTaskNodeMapping :one
 INSERT INTO "TaskNodeMapping" (
-	tnm_id,
 	task_id,
 	node_id
 ) VALUES (
-	$1, $2, $3
+	$1, $2
 ) RETURNING tnm_id, task_id, node_id, created_at
 `
 
 type CreateTaskNodeMappingParams struct {
-	TnmID  int64 `json:"tnm_id"`
 	TaskID int64 `json:"task_id"`
 	NodeID int64 `json:"node_id"`
 }
 
 func (q *Queries) CreateTaskNodeMapping(ctx context.Context, arg CreateTaskNodeMappingParams) (TaskNodeMapping, error) {
-	row := q.db.QueryRowContext(ctx, createTaskNodeMapping, arg.TnmID, arg.TaskID, arg.NodeID)
+	row := q.db.QueryRowContext(ctx, createTaskNodeMapping, arg.TaskID, arg.NodeID)
 	var i TaskNodeMapping
 	err := row.Scan(
 		&i.TnmID,

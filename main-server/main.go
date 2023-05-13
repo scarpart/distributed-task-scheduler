@@ -21,13 +21,14 @@ func main() {
 		WithServerAddr(config.SERVER_ADDRESS)
 
 	addrToKey["http://127.0.0.1:8080"] = ""
+	addrToKey["http://127.0.0.1:8081"] = ""
  	lb.InitRemoteServers(addrToKey)
 
 	fmt.Printf("here in main after add: %v\n", lb.Servers)
 
-	err = lb.Start()
+	err = lb.Start("main-server/certs/cert.pem", "main-server/certs/key_no_passphrase.pem")
 	if err != nil {
-		log.Fatal("Could not start the Load Balancer: ", err)
+		log.Fatal("Could not start the HTTPS Load Balancer: ", err)
 	}
 }
 
