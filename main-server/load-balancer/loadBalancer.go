@@ -2,6 +2,7 @@ package loadbalancer
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -23,6 +24,20 @@ type LoadBalancer struct {
 }
 
 func NewLoadBalancer() *LoadBalancer {
+	// -------- ATTENTION: This is just for testing purposes, it should never be used in production.
+	// What I'm doing is essentially just trusting my self-signed TLS certificates that are in the remote servers,
+	// Since I don't really want to pay for domains and I'm just testing things in localhost. 
+	cert, err := ioutil.ReadFile("remote-server/certs/cert.pem")
+	if err != nil {
+		log.Fatalf("Couldn't load server certifitate: %v", err)
+	}
+
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM(cert); !ok {
+		log.Fatalf("Failed to append certificate")
+	}
+	// -------- ATTENTION: read the above 
+
 	config, err := util.LoadConfig("./main-server")
 	if err != nil {
 		log.Println("Could not read LB Client configs. Using default values.", err)
@@ -36,6 +51,10 @@ func NewLoadBalancer() *LoadBalancer {
 			Timeout: time.Duration(config.LB_CONN_TIMEOUT) * time.Second,
 			Transport: &http.Transport{
 				MaxConnsPerHost: int(config.LB_CLIENT_MAX_CONNS),
+				// ATTENTION: view code above 
+				TLSClientConfig: &tls.Config{
+					RootCAs: certPool,
+				},
 			},
 		},
 	}
@@ -52,15 +71,25 @@ func NewLoadBalancer() *LoadBalancer {
 	router.GET("/node/:node_id", lb.DistributeRequest)
 	router.GET("/node", lb.DistributeRequest)
 
+	// Sign in endpoints
+	router.POST("/user", lb.DistributeRequest)
+
 	lb.Router = router
 	return lb
 }
+
+func (lb LoadBalancer) WithServerAddr(addr string) LoadBalancer {
+	lb.URL = addr 
+	return lb
+}	
 
 func (lb *LoadBalancer) ServerHealthChecks(interval time.Duration) {
 	for {
 		lb.mutex.Lock()	
 		for _, server := range *lb.Servers {
-			url := server.URL + "/health"
+			fmt.Println("in server health check for")
+
+			url := server.URL + "/public/health"
 			
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
@@ -81,6 +110,7 @@ func (lb *LoadBalancer) ServerHealthChecks(interval time.Duration) {
 				server.Mutex.Unlock()
 			} else {
 				server.IsAvailable = true
+				fmt.Println(server.URL, " should be available: ", server.IsAvailable)
 			}
 
 		}
@@ -102,6 +132,8 @@ func (lb *LoadBalancer) InitRemoteServers(addrToKey map[string]string) {
 }
 
 func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
+	fmt.Println("Inside distribute request")
+
 	server := lb.Servers.LeastConnections()
 	if server == nil {
 		return 
@@ -111,7 +143,7 @@ func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 	isAvailable := server.IsAvailable 
 	server.Mutex.Unlock()
 
-	fmt.Println(isAvailable)
+	fmt.Println("server is available:", isAvailable)
 
 	if !isAvailable {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
@@ -119,7 +151,16 @@ func (lb *LoadBalancer) DistributeRequest(ctx *gin.Context) {
 	}
 
 	// Creates the request to be executed by the HTTP Client
-	req, err := http.NewRequest(ctx.Request.Method, server.URL + ctx.Request.URL.Path + "?" + ctx.Request.URL.RawQuery, ctx.Request.Body)
+	// TODO: change the logic for private servers here
+	var group string
+	switch ctx.Request.URL.Path {
+	case "/user":
+		group = "/public"
+	default:
+		group = "/private"
+	}
+
+	req, err := http.NewRequest(ctx.Request.Method, server.URL + group + ctx.Request.URL.Path + "?" + ctx.Request.URL.RawQuery, ctx.Request.Body)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
@@ -201,9 +242,4 @@ func errorResponse(err error) gin.H {
 		"error": err.Error(),
 	}
 }
-
-func (lb LoadBalancer) WithServerAddr(addr string) LoadBalancer {
-	lb.URL = addr 
-	return lb
-}	
 

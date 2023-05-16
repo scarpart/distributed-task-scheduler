@@ -28,7 +28,7 @@ func NewServer(store *db.Store, addr string) *Server {
 		publicGroup.GET("/health", func(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, nil)
 		})
-		//publicGroup.POST("/user", server.CreateUser)
+		publicGroup.POST("/user", server.CreateUser)
 	}
 
 	// Private Group uses API Key validation as custom a middleware 
