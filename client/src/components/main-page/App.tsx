@@ -1,24 +1,24 @@
 import React, { useEffect, useState } from 'react';
 
 type Task = {
-  Status: string;
-  CpuUsage: number;
-  MemUsage: number;
-  TaskName: string;
-  TaskDescription: string;
-  TaskID: number;
-  UserID: number;
-  ScheduledTime: string;
-  NThreads: number;
-  Priority: number;
-  RetryCount: number;
-  MaxRetries: number;
-  Dependencies: number[];
-  CreatedTime: string;
-  LastUpdatedTime: string;
-  ErrorMessage: string;
-  MachineID: string;
-  Output: string;
+  status: string;
+  cpuUsage: number;
+  memUsage: number;
+  taskName: string;
+  taskDescription: string;
+  taskID: number;
+  userID: number;
+  scheduledTime: string;
+  nThreads: number;
+  priority: number;
+  retryCount: number;
+  maxRetries: number;
+  dependencies: number[];
+  createdTime: string;
+  lastUpdatedTime: string;
+  errorMessage: string;
+  machineID: string;
+  output: string;
 };
 
 const App: React.FC = () => {
@@ -44,6 +44,7 @@ const App: React.FC = () => {
         }
         const data: Task[] = await response.json();
         setData(data);
+		console.log(data);
       } catch (error) {
 		if (error instanceof Error) {
 			setError(error.message);
@@ -79,22 +80,22 @@ const App: React.FC = () => {
 			<th>Priority</th>
 			<th>Dependencies</th>
 		  </tr>
-		  <tbody>
-			{data.map((task) => (
-			  <tr key={task.TaskID}>
-			  <th>{task.TaskID}</th>
-			  <th>{task.MachineID}</th>
-			  <th>{task.TaskDescription}</th>
-			  <th>{task.Status}</th>
-			  <th>{task.UserID}</th>
-			  <th>{task.ScheduledTime}</th>
-			  <th>{task.LastUpdatedTime}</th>
-			  <th>{task.Priority}</th>
-			  <th>{task.Dependencies}</th>
-			  </tr>
-			))}
-		  </tbody>
 		</thead>
+		<tbody>
+		{data.map((task, index) => (
+					<tr key={`${task.taskID}-${index}`}>
+					<td>{task.taskID}</td>
+					<td>{task.machineID}</td>
+					<td>{task.taskDescription}</td>
+					<td>{task.status}</td>
+					<td>{task.userID}</td>
+					<td>{task.scheduledTime}</td>
+					<td>{task.lastUpdatedTime}</td>
+					<td>{task.priority}</td>
+					<td>{task.dependencies ? task.dependencies.join(", ") : "null"}</td>
+					</tr>
+					))}
+  		</tbody>
 	  </table>
     </div>
   );

@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/scarpart/distributed-task-scheduler/util"
 )
@@ -61,6 +63,11 @@ func NewLoadBalancer() *LoadBalancer {
 
 	router := gin.Default()
 
+	// This is just here temporarily, to facilitate development 
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true 
+	router.Use(cors.New(corsConfig))
+
 	// POST 
 	router.POST("/task", lb.DistributeRequest)
 	router.POST("/node", lb.DistributeRequest)
@@ -73,6 +80,61 @@ func NewLoadBalancer() *LoadBalancer {
 
 	// Sign in endpoints
 	router.POST("/user", lb.DistributeRequest)
+
+	// TESTING -- SHOULD BE REMOVED SOON
+	// This is here so I can code the frontend up before finishing the backend.
+	// The reason for that is simple: for the backend, I have to think and that takes time,
+	// But for the fronted, I can just code whenever, so in idle times I can pick this up and do some work.
+	// ie, it's for the sake of efficiency, since I know what the backend is going to look like.
+	type Task struct {
+		Status           string    `json:"status"`
+		CpuUsage         float64   `json:"cpuUsage"`
+		MemUsage         float64   `json:"memUsage"`
+		TaskName         string    `json:"taskName"`
+		TaskDescription  string    `json:"taskDescription"`
+		TaskID           int       `json:"taskID"`
+		UserID           int       `json:"userID"`
+		ScheduledTime    time.Time `json:"scheduledTime"`
+		NThreads         int       `json:"nThreads"`
+		Priority         int       `json:"priority"`
+		RetryCount       int       `json:"retryCount"`
+		MaxRetries       int       `json:"maxRetries"`
+		Dependencies     []int     `json:"dependencies"`
+		CreatedTime      time.Time `json:"createdTime"`
+		LastUpdatedTime  time.Time `json:"lastUpdatedTime"`
+		ErrorMessage     string    `json:"errorMessage"`
+		MachineID        string    `json:"machineID"`
+		Output           string    `json:"output"`
+	}
+
+	statuses := []string{"ready", "running", "done"}
+	var tasks []Task
+	for i := 0; i < 5; i++ {
+		tasks = append(tasks, Task{
+			Status:           statuses[rand.Intn(len(statuses))],
+			CpuUsage:         rand.Float64() * 100,
+			MemUsage:         rand.Float64() * 100,
+			TaskName:         "Task " + string(i),
+			TaskDescription:  "This is task " + string(i),
+			TaskID:           i,
+			UserID:           rand.Intn(100) + 1,
+			ScheduledTime:    time.Now().Add(time.Duration(rand.Intn(24))*time.Hour),
+			NThreads:         rand.Intn(10) + 1,
+			Priority:         rand.Intn(10) + 1,
+			RetryCount:       0,
+			MaxRetries:       3,
+			Dependencies:     []int{},
+			CreatedTime:      time.Now(),
+			LastUpdatedTime:  time.Now(),
+			ErrorMessage:     "",
+			MachineID: 		  fmt.Sprintf("%d", rand.Intn(200)),			
+			Output:           "output",
+		})
+	}
+
+	router.GET("/scheduled-tasks", func(ctx *gin.Context) {
+		ctx.JSON(200, tasks)
+	})	
 
 	lb.Router = router
 	return lb
