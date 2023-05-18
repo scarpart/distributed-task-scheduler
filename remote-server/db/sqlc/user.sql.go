@@ -14,30 +14,35 @@ const createUser = `-- name: CreateUser :one
 INSERT INTO "Users" (
 	username,
 	password,
-	email
+	email,
+	api_key
 ) VALUES (
-	$1, $2, $3
-) RETURNING user_id, username, password, api_key, email, created_at, updated_at
+	$1, $2, $3, $4
+) RETURNING username, api_key, email
 `
 
 type CreateUserParams struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Email    string `json:"email"`
+	Username string         `json:"username"`
+	Password string         `json:"password"`
+	Email    string         `json:"email"`
+	ApiKey   sql.NullString `json:"api_key"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.Password, arg.Email)
-	var i User
-	err := row.Scan(
-		&i.UserID,
-		&i.Username,
-		&i.Password,
-		&i.ApiKey,
-		&i.Email,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+type CreateUserRow struct {
+	Username string         `json:"username"`
+	ApiKey   sql.NullString `json:"api_key"`
+	Email    string         `json:"email"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
+	row := q.db.QueryRowContext(ctx, createUser,
+		arg.Username,
+		arg.Password,
+		arg.Email,
+		arg.ApiKey,
 	)
+	var i CreateUserRow
+	err := row.Scan(&i.Username, &i.ApiKey, &i.Email)
 	return i, err
 }
 

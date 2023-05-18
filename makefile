@@ -8,10 +8,10 @@ dropdb:
 	docker exec -it postgresDTS dropdb --username=taskmanager distributed_task_scheduler_db
 
 migrateup:
-	migrate -path db/migration -database "postgresql://taskmanager:distributed-tasks@localhost:5432/distributed_task_scheduler_db?sslmode=disable" -verbose up
+	migrate -path remote-server/db/migration -database "postgresql://taskmanager:distributed-tasks@localhost:5432/distributed_task_scheduler_db?sslmode=disable" -verbose up
 
 migratedown:
-	migrate -path db/migration -database "postgresql://taskmanager:distributed-tasks@localhost:5432/distributed_task_scheduler_db?sslmode=disable" -verbose down
+	migrate -path remote-server/db/migration -database "postgresql://taskmanager:distributed-tasks@localhost:5432/distributed_task_scheduler_db?sslmode=disable" -verbose down
 
 sqlc:
 	sqlc generate 

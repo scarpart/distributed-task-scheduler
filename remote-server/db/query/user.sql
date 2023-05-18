@@ -2,10 +2,11 @@
 INSERT INTO "Users" (
 	username,
 	password,
-	email
+	email,
+	api_key
 ) VALUES (
-	$1, $2, $3
-) RETURNING *;
+	$1, $2, $3, $4
+) RETURNING username, api_key, email;
 
 -- name: GetAPIKeys :one
 SELECT * FROM "Users" 

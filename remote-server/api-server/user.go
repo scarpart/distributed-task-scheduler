@@ -80,6 +80,7 @@ type CreateUserRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Email    string `json:"email"    binding:"required"`
+	ApiKey   string
 }
 
 func (server *Server) CreateUser(ctx *gin.Context) {
@@ -96,10 +97,20 @@ func (server *Server) CreateUser(ctx *gin.Context) {
 		return
 	}
 
+	apiKey, err := generateAPIKeys(32); 
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, genericErrorResponse("An error occurred during registration."))
+		return
+	}
+
 	arg := db.CreateUserParams{
 		Username: req.Username,
 		Password: string(hashedPassword),
 		Email:    req.Email,
+		ApiKey:   sql.NullString{
+			String: apiKey,
+			Valid: true,
+		},
 	}
 
 	user, err := server.store.CreateUser(ctx, arg)
