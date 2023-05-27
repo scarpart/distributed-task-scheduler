@@ -2,23 +2,26 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"os"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	docker "github.com/fsouza/go-dockerclient"
 )
 
 type WorkerNode struct {
 	name 			  string 
 	nodeID            uint32
 	addr              string
-	taskConsumer      *kafka.Consumer
 	taskTopic         string
 	errorTopic        string 
 	heartbeatTopic    string
-	heartbeatInterval time.Duration 
 	maxRetryCount     int32
+	heartbeatInterval time.Duration 
+	taskConsumer      *kafka.Consumer
 	heartbeatProducer *kafka.Producer
 	errorProducer     *kafka.Producer
 }
@@ -116,12 +119,70 @@ func (node *WorkerNode) Run(ctx context.Context) error {
 				}, nil)
 				continue
 			}
+			
+			var task Task
+			if err := json.Unmarshal(msg.Value, &task); err != nil {
+				node.errorProducer.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &node.errorTopic, Partition: kafka.PartitionAny},
+					Value:          []byte(err.Error()),
+				}, nil)
+			}
 
-			// TODO: handle the message here :)
+			client, err := docker.NewClientFromEnv()
+			if err != nil {
+				node.errorProducer.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &node.errorTopic, Partition: kafka.PartitionAny},
+					Value:          []byte(err.Error()),
+				}, nil)
+			}
+			
+			container, err := client.CreateContainer(docker.CreateContainerOptions{
+				Config: &docker.Config{
+					Image: task.Image,
+					Cmd:   []string{task.Command, task.Args}, 
+				},
+				HostConfig: &docker.HostConfig{
+					NetworkMode: "none",	
+				},
+			})
+			if err != nil {
+				return err 
+			}
+
+			client.StartContainer(container.ID, nil)
+			exitCode, err := client.WaitContainer(container.ID)
+			if err != nil {
+				node.errorProducer.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &node.errorTopic, Partition: kafka.PartitionAny},
+					Value:          []byte(err.Error()),
+				}, nil)
+			}
+
+			logOptions := docker.LogsOptions{
+				Container:    container.ID,
+				OutputStream: os.Stdout,
+				ErrorStream:  os.Stderr, 
+				Stdout:       true,
+				Stderr:       true,
+			}
+
+			err = client.Logs(logOptions)
+			if err != nil {
+				node.errorProducer.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &node.errorTopic, Partition: kafka.PartitionAny},
+					Value:          []byte(err.Error()),
+				}, nil)
+			}
+
+			if exitCode != 0 {
+				node.errorProducer.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &node.errorTopic, Partition: kafka.PartitionAny},
+					Value:          []byte(err.Error()),
+				}, nil)
+			}
+
+			client.RemoveContainer(docker.RemoveContainerOptions{ID: container.ID, Force: true})
 		}
 	}
 }
-
-
-
 
