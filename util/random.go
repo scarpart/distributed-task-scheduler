@@ -1,3 +1,7 @@
+/**
+ * This file is just meant to be an API for the test methods regarding SQLC and possibly some more
+ */
+
 package util
 
 import (

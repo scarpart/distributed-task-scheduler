@@ -4,14 +4,16 @@ import (
 	"crypto/tls"
 	"net/http"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gin-gonic/gin"
 	db "github.com/scarpart/distributed-task-scheduler/remote-server/db/sqlc"
 )
 
 type Server struct {
-	addr    string
-	store   *db.Store
-	router  *gin.Engine
+	addr     string
+	store    *db.Store
+	router   *gin.Engine
+	producer *kafka.Producer
 }
 
 // Constructs the server and sets up the routing
@@ -19,6 +21,16 @@ func NewServer(store *db.Store, addr string) *Server {
 	server := &Server{store: store, addr: addr}
 	router := gin.Default()
 
+	// TODO: change the bootstrap.servers addr here and probably make it configurable in a .env
+	// TODO: add addresses for the actual kafka brokers instead of localhost 
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
+	if err != nil {
+		// FIXME : better error handling here
+		panic(err)
+	}
+	server.producer = p
+
+	// TODO: remove comment below and fix the groups (better organization, names)
 	// In a real application, there would be no "public" group, 
 	// as it would only be accessible for people that paid for the service,
 	// but this is simple enough for the project, I don't want to overcomplicate

@@ -4,6 +4,7 @@ import (
 	"log"
 )
 
+// TODO: make this work again and fix the current logging (seriously lacking)
 var (
 	WarningLogger *log.Logger
 	InfoLogger    *log.Logger
