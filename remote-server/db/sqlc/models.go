@@ -44,10 +44,11 @@ type TaskNodeMapping struct {
 }
 
 type User struct {
-	UserID    int32     `json:"user_id"`
-	Username  string    `json:"username"`
-	Password  string    `json:"password"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	UserID    int32          `json:"user_id"`
+	Username  string         `json:"username"`
+	Password  string         `json:"password"`
+	ApiKey    sql.NullString `json:"api_key"`
+	Email     string         `json:"email"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 }

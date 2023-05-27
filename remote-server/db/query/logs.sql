@@ -1,10 +1,9 @@
 -- name: CreateLog :one
 INSERT INTO "Logs" (
-	log_id,
 	task_id,
 	message
 ) VALUES (
-	$1, $2, $3
+	$1, $2
 ) RETURNING *;
 
 -- name: UpdateLog :one

@@ -1,10 +1,9 @@
 -- name: CreateTaskNodeMapping :one
 INSERT INTO "TaskNodeMapping" (
-	tnm_id,
 	task_id,
 	node_id
 ) VALUES (
-	$1, $2, $3
+	$1, $2
 ) RETURNING *;
 
 -- name: GetTaskNodeMapping :one
